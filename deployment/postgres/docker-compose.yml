@@ -1,0 +1,54 @@
+version: '3.9'
+services:
+  service-db-postgres:
+    restart: always
+    image: postgres:14
+    volumes:
+      - ../../migrations/01_create_initial_table.down.sql:/docker-entrypoint-initdb.d/1.sql
+      - ../../migrations/01_create_initial_table.up.sql:/docker-entrypoint-initdb.d/2.sql
+      - ~/db-data:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      retries: 3
+      timeout: 5s
+
+  common-service-waiter:
+    image: alpine
+    depends_on:
+      service-db-postgres:
+        condition: service_healthy
+
+  url:
+    image: ozon/url
+    ports:
+      - "8081:8081"
+    depends_on:
+      common-service-waiter:
+        condition: service_completed_successfully
+    environment:
+      STORAGE_TYPE: ${STORAGE_TYPE}
+      DATABASE_URL: ${DATABASE_URL}
+    command: "/url"
+
+  microservice-waiter:
+    image: alpine
+    depends_on:
+      url:
+        condition: service_started
+
+  api:
+    image: ozon/api
+    ports:
+      - "8082:8082"
+    depends_on:
+      microservice-waiter:
+        condition: service_completed_successfully
+    command: "/api"
