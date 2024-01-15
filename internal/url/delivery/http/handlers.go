@@ -23,7 +23,7 @@ func (h Handler) CreateShortUrl(c echo.Context) error {
 		return c.JSON(httpError.HandleError(err))
 	}
 
-	shortUrl, err := h.urlUseCase.CreateShortUrlAndSave(context.TODO(), fullUrl)
+	shortUrl, err := h.urlUseCase.CreateShortUrlAndSave(context.Background(), fullUrl)
 	if err != nil {
 		c.JSON(httpError.HandleError(err))
 	}
@@ -35,7 +35,7 @@ func (h Handler) GetFullUrl(c echo.Context) error {
 	var shortUrl models.Url
 	shortUrl.Url = c.Param("url")
 
-	fullUrl, err := h.urlUseCase.GetFullUrl(context.TODO(), shortUrl)
+	fullUrl, err := h.urlUseCase.GetFullUrl(context.Background(), shortUrl)
 	if err != nil {
 		return c.JSON(httpError.HandleError(err))
 	}
